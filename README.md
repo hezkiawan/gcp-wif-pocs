@@ -1,5 +1,5 @@
 
-# Google Cloud Secretless Authentication PoCs
+# Google Cloud Workload Identity Federation Authentication PoCs
 
 ## Purpose
 
