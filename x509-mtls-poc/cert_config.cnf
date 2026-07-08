@@ -1,0 +1,47 @@
+# ==============================================================================
+# OpenSSL Configuration for X.509 Workload Identity Federation (Simulation)
+# ==============================================================================
+#
+# This configuration generates the certificates used throughout this PoC.
+#
+# For simplicity, this repository creates its own Root CA locally using OpenSSL.
+#
+# Production environments would typically replace this local Root CA with a
+# trusted Certificate Authority (CA) such as:
+#
+#   - Sectigo
+#   - Microsoft Active Directory Certificate Services (AD CS)
+#   - HashiCorp Vault PKI
+#   - AWS Private CA
+#
+# The workload certificate issued by that CA would then be trusted by
+# Google Cloud Workload Identity Federation.
+#
+# ==============================================================================
+
+[req]
+# Distinguished Name (DN) section describing the certificate subject.
+distinguished_name = empty_distinguished_name
+# Disables interactive prompts so certificates can be generated automatically via OpenSSL CLI
+prompt = no
+
+[empty_distinguished_name]
+# The Common Name (CN). 
+# This uniquely identifies the workload.
+# In our WIF setup, GCP parses this exact field 
+# (google.subject=assertion.subject.dn.cn) to map the certificate to the IAM Service Account.
+CN = my-local-vm
+
+[ca_exts]
+# Identifies this certificate as a Certificate Authority capable of signing workloads
+basicConstraints=critical,CA:TRUE
+# Restricts this Root CA strictly to signing other certificates and revocation lists
+keyUsage=critical,keyCertSign,cRLSign
+
+[leaf_exts]
+# Identifies this as an end-entity (workload) certificate, meaning it cannot sign others
+basicConstraints=critical,CA:FALSE
+# Allows the certificate to authenticate during TLS handshakes and sign authentication messages.
+keyUsage=critical,digitalSignature,keyEncipherment
+# CRITICAL: clientAuth is strictly required by Google Cloud to establish the mTLS handshake
+extendedKeyUsage=clientAuth

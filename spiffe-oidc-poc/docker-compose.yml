@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # --------------------------------------------------------------------------
+  # SPIRE Server
+  # --------------------------------------------------------------------------
+  # Acts as the central trust authority.
+  #
+  # Responsibilities:
+  # - Maintains the SPIFFE trust domain.
+  # - Performs Node Attestation.
+  # - Issues Workload Identities (JWT-SVIDs).
+  # - Signs identities using its private signing key.
+  #
+  # Production:
+  # Usually deployed as a highly-available cluster backed by PostgreSQL.
+  # --------------------------------------------------------------------------
+  spire-server:
+    image: ghcr.io/spiffe/spire-server:1.15.1
+    container_name: spire-server
+    user: "0"
+    volumes:
+      # Mount the server configuration file as read-only
+      - ./server.conf:/run/spire/config/server.conf:ro
+      # Persist the SQLite database and keys across container restarts
+      - spire-server-data:/run/spire/data/server
+    ports:
+      - "8081:8081"
+    command: ["-config", "/run/spire/config/server.conf"]
+
+  # --------------------------------------------------------------------------
+  # SPIRE Agent
+  # --------------------------------------------------------------------------
+  #
+  # Runs ONCE per node (VM), not per application.
+  #
+  # Responsibilities:
+  # - Authenticates this node to the SPIRE Server.
+  # - Maintains a secure mTLS connection.
+  # - Performs Workload Attestation.
+  # - Issues workload identities to local applications.
+  #
+  # Applications never communicate directly with the SPIRE Server.
+  # They always communicate with the local SPIRE Agent.
+  # --------------------------------------------------------------------------
+  spire-agent:
+    image: ghcr.io/spiffe/spire-agent:1.15.1
+    container_name: spire-agent
+    user: "0"
+    pid: "host"  # Required so the Unix Workload Attestor can inspect host processes.
+    volumes:
+      - ./agent.conf:/run/spire/config/agent.conf:ro
+      - spire-agent-data:/run/spire/data/agent
+       # Unix Domain Socket used by local workloads to communicate with the SPIRE Agent.
+      - spire-sockets:/run/spire/sockets 
+    # The joinToken acts as a one-time password to attest this specific agent to the server
+    command: ["-config", "/run/spire/config/agent.conf", "-joinToken", "c9f872ca-6a70-495f-86b8-14cf8353d571"]
+    depends_on:
+      - spire-server
+
+  # --------------------------------------------------------------------------
+  # SPIFFE Helper
+  # --------------------------------------------------------------------------
+  #
+  # Helper sidecar that continuously retrieves identities from
+  # the SPIRE Agent and writes them to disk.
+  #
+  # In this PoC it exports:
+  #
+  # - JWT-SVID  -> token.jwt
+  # - X509-SVID -> svid.pem
+  #
+  # Google Workload Identity Federation consumes the JWT-SVID
+  # as the external identity.
+  # -----------------------------------------------------------------------
+  spiffe-helper:
+    image: ghcr.io/spiffe/spiffe-helper:0.8.0
+    container_name: spiffe-helper
+    user: "0" 
+    volumes:
+      - ./helper.conf:/etc/spiffe-helper/helper.conf:ro
+      # Needs access to the Workload API socket created by the SPIRE Agent
+      - spire-sockets:/run/spire/sockets:ro
+      # Bind mount mapping the sidecar's output directory to the local folder.
+      # This is how the Go application receives the dynamic credentials.
+      - ./shared-credentials:/var/run/credentials 
+    command: ["-config", "/etc/spiffe-helper/helper.conf"]
+    depends_on:
+      - spire-agent
+
+volumes:
+  spire-server-data:
+  spire-agent-data:
+  spire-sockets:

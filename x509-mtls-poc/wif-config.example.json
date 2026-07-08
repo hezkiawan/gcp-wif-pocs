@@ -1,0 +1,12 @@
+{
+  "universe_domain": "googleapis.com",
+  "type": "external_account",
+  "audience": "//iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/x509-sim-pool/providers/x509-sim-provider",
+  "subject_token_type": "urn:ietf:params:oauth:token-type:mtls",
+  "token_url": "https://sts.googleapis.com/v1/token",
+  "credential_source": {
+    "file": "/absolute/path/to/your/x509-mtls-poc/workload.cert",
+    "private_key_file": "/absolute/path/to/your/x509-mtls-poc/workload.key"
+  },
+  "service_account_impersonation_url": "SERVICE_ACCOUNT_EMAIL_TO_IMPERSONATE"
+}

@@ -1,0 +1,32 @@
+# ==========================================
+# GCP Secretless Auth PoC - GitIgnore
+# ==========================================
+
+# 1. Cryptographic Keys & Certificates
+# Never commit private keys or generated certs to version control
+*.key
+*.req
+*.pem
+*.csr
+
+# Ignore certs, but ALLOW example certs
+*.cert
+!*.example.cert
+
+# 2. SPIRE & OIDC Tokens
+# Ignore JWTs, but ALLOW example JWTs
+*.jwt
+!*.example.jwt
+shared-credentials/*
+!shared-credentials/.gitkeep
+
+# 3. Machine-Specific Configurations
+# These contain hardcoded absolute paths specific to the host machine
+wif-config.json
+trust_store.yaml
+
+# 4. Go Environment & Binaries
+# Ignore compiled executables and cached modules
+bin/
+obj/
+*.exe
