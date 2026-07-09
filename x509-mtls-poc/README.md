@@ -120,7 +120,7 @@ For this PoC, the Root CA is generated locally using OpenSSL.
 
 ---
 
-# Running the PoC
+# IMPLEMENTATION
 
 ## Step 1 — Generate the Certificates
 
