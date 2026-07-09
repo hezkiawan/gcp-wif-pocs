@@ -5,6 +5,8 @@
 # 1. Cryptographic Keys & Certificates
 # Never commit private keys or generated certs to version control
 *.key
+!*.example.key
+
 *.req
 *.pem
 *.csr
